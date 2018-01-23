@@ -5,12 +5,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/charithe/otgrpc"
 	"github.com/opentracing/opentracing-go"
-
+	context "golang.org/x/net/context"
 	"google.golang.org/grpc"
 
-	context "golang.org/x/net/context"
+	"github.com/hwgo/pher/otgrpc"
 )
 
 type TestServer struct{}
