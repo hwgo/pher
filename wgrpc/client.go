@@ -40,6 +40,25 @@ func NewClientWithTracing(name string, host string, port int) *Client {
 	}
 }
 
+func NewOTClient(host string, port int, tracer opentracing.Tracer, logger log.Factory) *Client {
+	th := otgrpc.NewTraceHandler(tracer)
+	conn, err := grpc.Dial(
+		HostPort(host, port),
+		grpc.WithStatsHandler(th),
+		grpc.WithInsecure(),
+	)
+
+	if err != nil {
+		logger.Bg().Fatal("did not connect: ", zap.Error(err))
+	}
+
+	return &Client{
+		tracer: tracer,
+		logger: logger,
+		cc:     conn,
+	}
+}
+
 func (c *Client) Conn() *grpc.ClientConn {
 	return c.cc
 }

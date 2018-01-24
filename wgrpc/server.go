@@ -36,21 +36,28 @@ func (s *Server) Run() error {
 	return s.Gs.Serve(lis)
 }
 
-func NewServerWithTracing(name string, hostPort string) *Server {
-	logger := log.NewFactory(log.DefaultLogger.With(zap.String("service", name)))
-	metricsFactory := metrics.DefaultMetricsFactory()
-	tracer := tracing.Init(name, metricsFactory.Namespace(name, nil), logger)
+func NewServer(hostPort string, tracer opentracing.Tracer, logger log.Factory) *Server {
+	return &Server{
+		hostPort: hostPort,
+		tracer:   tracer,
+		logger:   logger,
+		Gs:       newGrpcServer(tracer),
+	}
+}
 
-	th := otgrpc.NewTraceHandler(tracer)
+func newGrpcServer(tracer opentracing.Tracer) *grpc.Server {
+	th := otgrpc.NewTraceHandler(tracer, otgrpc.WithPayloadLogging())
 	s := grpc.NewServer(grpc.StatsHandler(th))
 
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
 
-	return &Server{
-		hostPort: hostPort,
-		tracer:   tracer,
-		logger:   logger,
-		Gs:       s,
-	}
+	return s
+}
+
+func NewServerWithTracing(name string, hostPort string) *Server {
+	logger := log.NewFactory(log.DefaultLogger.With(zap.String("service", name)))
+	tracer := tracing.Init(name, metrics.Namespace(name, nil), logger)
+
+	return NewServer(hostPort, tracer, logger)
 }

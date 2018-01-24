@@ -36,7 +36,7 @@ func spanContextFromContext(ctx context.Context) opentracing.SpanContext {
 
 func injectSpanToMetadata(tracer opentracing.Tracer, span opentracing.Span, ctx context.Context) (context.Context, error) {
 	var md metadata.MD
-	if tmpMD, ok := metadata.FromIncomingContext(ctx); ok {
+	if tmpMD, ok := metadata.FromOutgoingContext(ctx); ok {
 		md = tmpMD.Copy()
 	} else {
 		md = metadata.New(nil)
@@ -46,7 +46,7 @@ func injectSpanToMetadata(tracer opentracing.Tracer, span opentracing.Span, ctx 
 		return ctx, err
 	}
 
-	return metadata.NewIncomingContext(ctx, md), nil
+	return metadata.NewOutgoingContext(ctx, md), nil
 }
 
 func extractSpanContextFromMetadata(tracer opentracing.Tracer, ctx context.Context) opentracing.SpanContext {
