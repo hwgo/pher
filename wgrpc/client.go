@@ -19,7 +19,7 @@ type Client struct {
 }
 
 func NewClientWithTracing(name string, host string, port int) *Client {
-	logger := log.NewFactory(log.DefaultLogger.With(zap.String("client", name)))
+	logger := log.NewFactory(log.DefaultLogger.With(zap.String("component", name)))
 	tracer := tracing.Init(name, metrics.Namespace(name, nil), logger)
 
 	th := otgrpc.NewTraceHandler(tracer)
@@ -50,4 +50,8 @@ func (c *Client) Logger() log.Logger {
 
 func (c *Client) Close() {
 	c.cc.Close()
+}
+
+func (c *Client) LoggerFactory() log.Factory {
+	return c.logger
 }
