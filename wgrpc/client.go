@@ -22,12 +22,11 @@ func NewClientWithTracing(name string, host string, port int) *Client {
 	logger := log.NewFactory(log.DefaultLogger.With(zap.String("component", name)))
 	tracer := tracing.Init(name, metrics.Namespace(name, nil), logger)
 
-	th := otgrpc.NewTraceHandler(tracer)
-	conn, err := grpc.Dial(
-		HostPort(host, port),
-		grpc.WithStatsHandler(th),
-		grpc.WithInsecure(),
-	)
+	return NewClient(host, port, tracer, logger)
+}
+
+func NewClient(host string, port int, tracer opentracing.Tracer, logger log.Factory) *Client {
+	conn, err := newGrpcClientConn(HostPort(host, port), tracer)
 
 	if err != nil {
 		logger.Bg().Fatal("did not connect: ", zap.Error(err))
@@ -40,23 +39,13 @@ func NewClientWithTracing(name string, host string, port int) *Client {
 	}
 }
 
-func NewOTClient(host string, port int, tracer opentracing.Tracer, logger log.Factory) *Client {
-	th := otgrpc.NewTraceHandler(tracer)
-	conn, err := grpc.Dial(
-		HostPort(host, port),
+func newGrpcClientConn(hostport string, tracer opentracing.Tracer) (*grpc.ClientConn, error) {
+	th := otgrpc.NewTraceHandler(tracer, otgrpc.WithPayloadLogging())
+	return grpc.Dial(
+		hostport,
 		grpc.WithStatsHandler(th),
 		grpc.WithInsecure(),
 	)
-
-	if err != nil {
-		logger.Bg().Fatal("did not connect: ", zap.Error(err))
-	}
-
-	return &Client{
-		tracer: tracer,
-		logger: logger,
-		cc:     conn,
-	}
 }
 
 func (c *Client) Conn() *grpc.ClientConn {
